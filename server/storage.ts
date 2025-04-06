@@ -341,4 +341,152 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+import { db } from "./db";
+import { eq, like, or } from "drizzle-orm";
+import connectPg from "connect-pg-simple";
+import session from "express-session";
+import postgres from "postgres";
+
+const PostgresSessionStore = connectPg(session);
+// Create postgres connection
+const sql = postgres(process.env.DATABASE_URL!);
+
+// Database storage implementation
+export class DatabaseStorage implements IStorage {
+  sessionStore: session.Store;
+
+  constructor() {
+    this.sessionStore = new PostgresSessionStore({ 
+      conObject: {
+        connectionString: process.env.DATABASE_URL!,
+      },
+      createTableIfMissing: true
+    });
+  }
+
+  // User operations
+  async getUser(id: number): Promise<User | undefined> {
+    const result = await db.select().from(users).where(eq(users.id, id));
+    return result[0];
+  }
+  
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const result = await db.select().from(users).where(eq(users.username, username));
+    return result[0];
+  }
+  
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    const result = await db.select().from(users).where(eq(users.email, email));
+    return result[0];
+  }
+  
+  async createUser(insertUser: InsertUser): Promise<User> {
+    const result = await db.insert(users).values(insertUser).returning();
+    return result[0];
+  }
+  
+  // Category operations
+  async getCategories(): Promise<Category[]> {
+    return db.select().from(categories);
+  }
+  
+  async getCategory(id: number): Promise<Category | undefined> {
+    const result = await db.select().from(categories).where(eq(categories.id, id));
+    return result[0];
+  }
+  
+  async getCategoryBySlug(slug: string): Promise<Category | undefined> {
+    const result = await db.select().from(categories).where(eq(categories.slug, slug));
+    return result[0];
+  }
+  
+  async createCategory(insertCategory: InsertCategory): Promise<Category> {
+    const result = await db.insert(categories).values(insertCategory).returning();
+    return result[0];
+  }
+  
+  // Product operations
+  async getProducts(): Promise<Product[]> {
+    return db.select().from(products);
+  }
+  
+  async getProductsByCategory(categoryId: number): Promise<Product[]> {
+    return db.select().from(products).where(eq(products.categoryId, categoryId));
+  }
+  
+  async getProductsByCategorySlug(slug: string): Promise<Product[]> {
+    const category = await this.getCategoryBySlug(slug);
+    if (!category) {
+      return [];
+    }
+    return this.getProductsByCategory(category.id);
+  }
+  
+  async getProduct(id: number): Promise<Product | undefined> {
+    const result = await db.select().from(products).where(eq(products.id, id));
+    return result[0];
+  }
+  
+  async getProductBySlug(slug: string): Promise<Product | undefined> {
+    const result = await db.select().from(products).where(eq(products.slug, slug));
+    return result[0];
+  }
+  
+  async createProduct(insertProduct: InsertProduct): Promise<Product> {
+    const result = await db.insert(products).values(insertProduct).returning();
+    return result[0];
+  }
+  
+  async searchProducts(query: string): Promise<Product[]> {
+    const searchPattern = `%${query.toLowerCase()}%`;
+    return db.select().from(products).where(
+      or(
+        like(products.name, searchPattern),
+        like(products.description || '', searchPattern)
+      )
+    );
+  }
+  
+  // Order operations
+  async getOrders(userId?: number): Promise<Order[]> {
+    if (userId) {
+      return db.select().from(orders).where(eq(orders.userId, userId));
+    }
+    return db.select().from(orders);
+  }
+  
+  async getOrder(id: number): Promise<Order | undefined> {
+    const result = await db.select().from(orders).where(eq(orders.id, id));
+    return result[0];
+  }
+  
+  async createOrder(insertOrder: InsertOrder): Promise<Order> {
+    const result = await db.insert(orders).values(insertOrder).returning();
+    return result[0];
+  }
+  
+  async updateOrderStatus(id: number, status: string): Promise<Order | undefined> {
+    const result = await db
+      .update(orders)
+      .set({ 
+        status, 
+        updatedAt: new Date() 
+      })
+      .where(eq(orders.id, id))
+      .returning();
+    return result[0];
+  }
+  
+  // Order item operations
+  async getOrderItems(orderId: number): Promise<OrderItem[]> {
+    return db.select().from(orderItems).where(eq(orderItems.orderId, orderId));
+  }
+  
+  async createOrderItem(insertOrderItem: InsertOrderItem): Promise<OrderItem> {
+    const result = await db.insert(orderItems).values(insertOrderItem).returning();
+    return result[0];
+  }
+}
+
+// Use DatabaseStorage instead of MemStorage
+export const storage = new DatabaseStorage();

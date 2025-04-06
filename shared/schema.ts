@@ -1,6 +1,7 @@
-import { pgTable, text, serial, integer, boolean, timestamp, doublePrecision } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, doublePrecision, foreignKey } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+import { relations } from "drizzle-orm";
 
 // User Schema
 export const users = pgTable("users", {
@@ -57,7 +58,7 @@ export const products = pgTable("products", {
   price: doublePrecision("price").notNull(),
   comparePrice: doublePrecision("compare_price"),
   imageUrl: text("image_url").notNull(),
-  categoryId: integer("category_id").notNull(),
+  categoryId: integer("category_id").notNull().references(() => categories.id),
   inStock: boolean("in_stock").default(true),
   isNew: boolean("is_new").default(false),
   isSale: boolean("is_sale").default(false),
@@ -83,7 +84,7 @@ export const insertProductSchema = createInsertSchema(products).pick({
 // Order Schema
 export const orders = pgTable("orders", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id"),
+  userId: integer("user_id").references(() => users.id),
   status: text("status").notNull().default("pending"),
   total: doublePrecision("total").notNull(),
   tax: doublePrecision("tax"),
@@ -103,8 +104,8 @@ export const insertOrderSchema = createInsertSchema(orders).pick({
 // Order Item Schema
 export const orderItems = pgTable("order_items", {
   id: serial("id").primaryKey(),
-  orderId: integer("order_id").notNull(),
-  productId: integer("product_id").notNull(),
+  orderId: integer("order_id").notNull().references(() => orders.id),
+  productId: integer("product_id").notNull().references(() => products.id),
   quantity: integer("quantity").notNull(),
   price: doublePrecision("price").notNull(),
 });
@@ -115,6 +116,42 @@ export const insertOrderItemSchema = createInsertSchema(orderItems).pick({
   quantity: true,
   price: true,
 });
+
+// Relations
+export const usersRelations = relations(users, ({ many }) => ({
+  orders: many(orders),
+}));
+
+export const categoriesRelations = relations(categories, ({ many }) => ({
+  products: many(products),
+}));
+
+export const productsRelations = relations(products, ({ one, many }) => ({
+  category: one(categories, {
+    fields: [products.categoryId],
+    references: [categories.id],
+  }),
+  orderItems: many(orderItems),
+}));
+
+export const ordersRelations = relations(orders, ({ one, many }) => ({
+  user: one(users, {
+    fields: [orders.userId],
+    references: [users.id],
+  }),
+  orderItems: many(orderItems),
+}));
+
+export const orderItemsRelations = relations(orderItems, ({ one }) => ({
+  order: one(orders, {
+    fields: [orderItems.orderId],
+    references: [orders.id],
+  }),
+  product: one(products, {
+    fields: [orderItems.productId],
+    references: [products.id],
+  }),
+}));
 
 // Export types
 export type User = typeof users.$inferSelect;

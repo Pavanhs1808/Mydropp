@@ -3,8 +3,11 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertUserSchema, insertOrderSchema, insertOrderItemSchema } from "@shared/schema";
 import { z } from "zod";
+import { setupAuth } from "./auth";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Set up authentication routes
+  setupAuth(app);
   // Get all categories
   app.get("/api/categories", async (req, res) => {
     try {
@@ -69,61 +72,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // User registration
-  app.post("/api/auth/register", async (req, res) => {
-    try {
-      const userData = insertUserSchema.parse(req.body);
-      
-      // Check if username already exists
-      const existingUsername = await storage.getUserByUsername(userData.username);
-      if (existingUsername) {
-        return res.status(400).json({ message: "Username already taken" });
-      }
-      
-      // Check if email already exists
-      const existingEmail = await storage.getUserByEmail(userData.email);
-      if (existingEmail) {
-        return res.status(400).json({ message: "Email already registered" });
-      }
-      
-      // In a real app, we would hash the password here
-      const user = await storage.createUser(userData);
-      
-      // Don't return password in response
-      const { password, ...userWithoutPassword } = user;
-      
-      res.status(201).json(userWithoutPassword);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ message: "Invalid user data", errors: error.errors });
-      }
-      res.status(500).json({ message: "Failed to register user" });
-    }
-  });
-
-  // User login (mock)
-  app.post("/api/auth/login", async (req, res) => {
-    try {
-      const { username, password } = req.body;
-      
-      if (!username || !password) {
-        return res.status(400).json({ message: "Username and password are required" });
-      }
-      
-      const user = await storage.getUserByUsername(username);
-      
-      if (!user || user.password !== password) {
-        return res.status(401).json({ message: "Invalid credentials" });
-      }
-      
-      // Don't return password in response
-      const { password: _, ...userWithoutPassword } = user;
-      
-      res.json(userWithoutPassword);
-    } catch (error) {
-      res.status(500).json({ message: "Login failed" });
-    }
-  });
+  // Note: Authentication routes are now handled by setupAuth
 
   // Create order
   app.post("/api/orders", async (req, res) => {
