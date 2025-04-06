@@ -9,7 +9,8 @@ import { insertUserSchema } from "@shared/schema";
 import { Loader2 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { Redirect } from "wouter";
+import { Redirect, Link } from "wouter";
+import { useState } from "react";
 
 // Login schema only requires username and password
 const loginSchema = z.object({
@@ -150,6 +151,7 @@ function LoginForm() {
 
 function RegisterForm() {
   const { registerMutation } = useAuth();
+  const [isSupplier, setIsSupplier] = useState(false);
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
@@ -159,13 +161,25 @@ function RegisterForm() {
       confirmPassword: "",
       firstName: "",
       lastName: "",
+      isSupplier: false,
+      companyName: "",
+      companyDescription: "",
+      businessLicense: "",
     },
   });
 
   function onSubmit(values: RegisterFormValues) {
     // Omit confirmPassword as it's not part of the user schema
     const { confirmPassword, ...userData } = values;
-    registerMutation.mutate(userData);
+    registerMutation.mutate({
+      ...userData,
+      isSupplier
+    });
+  }
+  
+  function toggleSupplierForm() {
+    setIsSupplier(!isSupplier);
+    form.setValue("isSupplier", !isSupplier);
   }
 
   return (
@@ -248,7 +262,45 @@ function RegisterForm() {
             )}
           </div>
         </CardContent>
-        <CardFooter>
+        {isSupplier && (
+          <CardContent className="space-y-4 border-t pt-4">
+            <h3 className="font-semibold text-lg">Supplier Information</h3>
+            <div className="space-y-2">
+              <Label htmlFor="companyName">Company Name</Label>
+              <Input
+                id="companyName"
+                placeholder="Your Company Name"
+                {...form.register("companyName")}
+              />
+              {form.formState.errors.companyName && (
+                <p className="text-sm text-destructive">{form.formState.errors.companyName.message}</p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="companyDescription">Company Description</Label>
+              <Input
+                id="companyDescription"
+                placeholder="Brief description of your company"
+                {...form.register("companyDescription")}
+              />
+              {form.formState.errors.companyDescription && (
+                <p className="text-sm text-destructive">{form.formState.errors.companyDescription.message}</p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="businessLicense">Business License Number</Label>
+              <Input
+                id="businessLicense"
+                placeholder="Your business license number"
+                {...form.register("businessLicense")}
+              />
+              {form.formState.errors.businessLicense && (
+                <p className="text-sm text-destructive">{form.formState.errors.businessLicense.message}</p>
+              )}
+            </div>
+          </CardContent>
+        )}
+        <CardFooter className="flex-col gap-3">
           <Button type="submit" className="w-full" disabled={registerMutation.isPending}>
             {registerMutation.isPending ? (
               <>
@@ -257,6 +309,14 @@ function RegisterForm() {
             ) : (
               "Register"
             )}
+          </Button>
+          <Button 
+            type="button" 
+            variant="ghost" 
+            className="opacity-50 hover:opacity-100 transition-opacity text-xs"
+            onClick={toggleSupplierForm}
+          >
+            {isSupplier ? "Register as Regular Customer" : "Register as Supplier"}
           </Button>
         </CardFooter>
       </form>

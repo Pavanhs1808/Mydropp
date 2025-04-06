@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { X, User, Heart, Clipboard, Search, ShoppingBag, LogOut } from "lucide-react";
+import { X, User, Heart, Clipboard, Search, ShoppingBag, LogOut, Package } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useEffect } from "react";
 
@@ -155,6 +155,12 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                 <Heart className="h-5 w-5 mr-3" />
                 Wishlist
               </Link>
+              {user?.isSupplier && (
+                <Link href="/supplier/product" className="flex items-center py-3 px-2 text-gray-700 hover:bg-gray-100 rounded-md">
+                  <Package className="h-5 w-5 mr-3" />
+                  Supplier Portal
+                </Link>
+              )}
               <button 
                 onClick={handleLogout}
                 className="flex items-center w-full py-3 px-2 text-gray-700 hover:bg-gray-100 rounded-md text-left"

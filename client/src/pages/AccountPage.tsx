@@ -208,6 +208,19 @@ export default function AccountPage() {
                 </Tabs>
 
                 <Separator className="my-6" />
+                
+                {user.isSupplier && (
+                  <div className="mb-6">
+                    <h3 className="text-sm font-medium mb-2">Supplier Portal</h3>
+                    <Button 
+                      variant="outline" 
+                      className="w-full mb-2" 
+                      asChild
+                    >
+                      <Link href="/supplier/product">Add New Product</Link>
+                    </Button>
+                  </div>
+                )}
 
                 <Button 
                   variant="outline" 

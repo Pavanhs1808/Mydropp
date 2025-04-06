@@ -17,6 +17,11 @@ export const users = pgTable("users", {
   zipCode: text("zip_code"),
   country: text("country"),
   phoneNumber: text("phone_number"),
+  isSupplier: boolean("is_supplier").default(false),
+  companyName: text("company_name"),
+  companyDescription: text("company_description"),
+  businessLicense: text("business_license"),
+  supplierStatus: text("supplier_status").default("pending"),
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
@@ -31,6 +36,10 @@ export const insertUserSchema = createInsertSchema(users).pick({
   zipCode: true,
   country: true,
   phoneNumber: true,
+  isSupplier: true,
+  companyName: true,
+  companyDescription: true,
+  businessLicense: true,
 });
 
 // Category Schema
@@ -59,11 +68,13 @@ export const products = pgTable("products", {
   comparePrice: doublePrecision("compare_price"),
   imageUrl: text("image_url").notNull(),
   categoryId: integer("category_id").notNull().references(() => categories.id),
+  supplierId: integer("supplier_id").references(() => users.id),
   inStock: boolean("in_stock").default(true),
   isNew: boolean("is_new").default(false),
   isSale: boolean("is_sale").default(false),
   rating: doublePrecision("rating").default(0),
   reviewCount: integer("review_count").default(0),
+  status: text("status").default("pending"),
 });
 
 export const insertProductSchema = createInsertSchema(products).pick({
@@ -74,11 +85,13 @@ export const insertProductSchema = createInsertSchema(products).pick({
   comparePrice: true,
   imageUrl: true,
   categoryId: true,
+  supplierId: true,
   inStock: true,
   isNew: true,
   isSale: true,
   rating: true,
   reviewCount: true,
+  status: true,
 });
 
 // Order Schema
@@ -120,6 +133,7 @@ export const insertOrderItemSchema = createInsertSchema(orderItems).pick({
 // Relations
 export const usersRelations = relations(users, ({ many }) => ({
   orders: many(orders),
+  products: many(products),
 }));
 
 export const categoriesRelations = relations(categories, ({ many }) => ({
@@ -130,6 +144,10 @@ export const productsRelations = relations(products, ({ one, many }) => ({
   category: one(categories, {
     fields: [products.categoryId],
     references: [categories.id],
+  }),
+  supplier: one(users, {
+    fields: [products.supplierId],
+    references: [users.id],
   }),
   orderItems: many(orderItems),
 }));

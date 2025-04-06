@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { useCart } from "@/hooks/useCart";
-import { Search, User, Heart, ShoppingBag, Menu } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
+import { Search, User, Heart, ShoppingBag, Menu, Package } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
@@ -13,6 +14,7 @@ interface HeaderProps {
 export default function Header({ onMobileMenuOpen, onCartOpen }: HeaderProps) {
   const [location] = useLocation();
   const { itemCount } = useCart();
+  const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [isScrolled, setIsScrolled] = useState(false);
 
@@ -187,6 +189,19 @@ export default function Header({ onMobileMenuOpen, onCartOpen }: HeaderProps) {
             >
               Sale
             </Link>
+            {user?.isSupplier && (
+              <Link 
+                href="/supplier/product" 
+                className={`flex items-center px-3 py-2 text-sm font-medium ${
+                  location === "/supplier/product" 
+                    ? "text-primary border-b-2 border-primary" 
+                    : "text-gray-700 hover:text-primary hover:border-b-2 hover:border-primary"
+                }`}
+              >
+                <Package className="h-4 w-4 mr-1" />
+                Supplier Portal
+              </Link>
+            )}
           </div>
         </nav>
 

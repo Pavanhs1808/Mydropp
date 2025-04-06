@@ -8,6 +8,7 @@ import AccountPage from "@/pages/AccountPage";
 import OrderTrackingPage from "@/pages/OrderTrackingPage";
 import NotFound from "@/pages/not-found";
 import AuthPage from "@/pages/auth-page";
+import SupplierProductForm from "@/pages/SupplierProductForm";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import MobileMenu from "@/components/MobileMenu";
@@ -49,6 +50,7 @@ function App() {
             <Route path="/auth" component={AuthPage} />
             <ProtectedRoute path="/account" component={AccountPage} />
             <ProtectedRoute path="/track-order" component={OrderTrackingPage} />
+            <ProtectedRoute path="/supplier/product" component={SupplierProductForm} />
             <Route component={NotFound} />
           </Switch>
         </main>
