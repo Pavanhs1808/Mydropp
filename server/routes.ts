@@ -151,6 +151,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to fetch user orders" });
     }
   });
+  
+  // Update user information
+  app.patch("/api/users/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      // Check if the user is updating their own profile
+      if (!req.isAuthenticated() || req.user.id !== parseInt(id)) {
+        return res.status(403).json({ message: "Unauthorized to update this user" });
+      }
+      
+      // Check if the user exists
+      const existingUser = await storage.getUser(parseInt(id));
+      if (!existingUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Prevent updating sensitive fields
+      const { password, username, ...updateData } = req.body;
+      
+      // Update the user
+      const updatedUser = await storage.updateUser(parseInt(id), updateData);
+      
+      res.json(updatedUser);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update user" });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;

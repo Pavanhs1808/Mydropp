@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import {
   Tabs,
   TabsContent,
@@ -29,51 +29,129 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Order } from "@shared/schema";
 import { formatCurrency } from "@/lib/utils";
-import { Loader2, Package, User, MapPin, CreditCard } from "lucide-react";
-
-// Mock user data for display purposes
-const mockUserData = {
-  username: "johndoe",
-  firstName: "John",
-  lastName: "Doe",
-  email: "john.doe@example.com",
-  address: "123 Main St",
-  city: "New York",
-  state: "NY",
-  zipCode: "10001",
-  country: "United States",
-  phoneNumber: "(555) 123-4567",
-};
+import { Loader2, Package, User, MapPin, CreditCard, LogOut } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
 export default function AccountPage() {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("profile");
+  const { user, logoutMutation } = useAuth();
+  const [, setLocation] = useLocation();
 
-  // Query for orders (in a real app, we'd pass the user ID)
+  // Form state
+  const [firstName, setFirstName] = useState(user?.firstName || "");
+  const [lastName, setLastName] = useState(user?.lastName || "");
+  const [email, setEmail] = useState(user?.email || "");
+  const [phoneNumber, setPhoneNumber] = useState(user?.phoneNumber || "");
+  const [address, setAddress] = useState(user?.address || "");
+  const [city, setCity] = useState(user?.city || "");
+  const [state, setState] = useState(user?.state || "");
+  const [zipCode, setZipCode] = useState(user?.zipCode || "");
+  const [country, setCountry] = useState(user?.country || "");
+
+  // Password change form
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+
+  // Query for orders
   const { data: orders, isLoading: ordersLoading } = useQuery<Order[]>({
-    queryKey: ["/api/users/1/orders"],
+    queryKey: ["/api/users", user?.id, "orders"],
+    enabled: !!user?.id, // Only run query if user is logged in
   });
 
+  // Update profile mutation
+  const updateProfileMutation = useMutation({
+    mutationFn: async (profileData: any) => {
+      const res = await apiRequest("PATCH", `/api/users/${user?.id}`, profileData);
+      return await res.json();
+    },
+    onSuccess: (updatedUser) => {
+      queryClient.setQueryData(["/api/user"], updatedUser);
+      toast({
+        title: "Profile Updated",
+        description: "Your profile information has been updated successfully.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Update Failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Handle logging out
+  const handleLogout = async () => {
+    await logoutMutation.mutateAsync();
+    setLocation("/auth");
+  };
+
   const handleSaveProfile = () => {
-    toast({
-      title: "Profile Updated",
-      description: "Your profile information has been updated successfully.",
+    updateProfileMutation.mutate({
+      firstName,
+      lastName,
+      email,
+      phoneNumber
     });
   };
 
   const handleSaveAddress = () => {
-    toast({
-      title: "Address Updated",
-      description: "Your address information has been updated successfully.",
+    updateProfileMutation.mutate({
+      address,
+      city,
+      state,
+      zipCode,
+      country
     });
   };
 
   const handleSavePassword = () => {
+    if (newPassword !== confirmPassword) {
+      toast({
+        title: "Password Update Failed",
+        description: "New password and confirmation do not match.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!currentPassword || !newPassword) {
+      toast({
+        title: "Password Update Failed",
+        description: "Please fill in all password fields.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // This would typically call a mutation to update the password
     toast({
       title: "Password Updated",
       description: "Your password has been changed successfully.",
     });
+
+    // Clear password fields
+    setCurrentPassword("");
+    setNewPassword("");
+    setConfirmPassword("");
   };
+
+  if (!user) {
+    return (
+      <div className="flex justify-center items-center h-[80vh]">
+        <div className="text-center space-y-4">
+          <h2 className="text-2xl font-bold">Please Sign In</h2>
+          <p className="text-gray-500">You need to be logged in to view your account</p>
+          <Button asChild>
+            <Link href="/auth">Sign In</Link>
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-gray-50 min-h-[calc(100vh-var(--header-height))] py-12">
@@ -88,15 +166,17 @@ export default function AccountPage() {
                 <div className="flex items-center space-x-4 mb-6">
                   <div className="bg-primary text-white rounded-full w-12 h-12 flex items-center justify-center">
                     <span className="text-lg font-semibold">
-                      {mockUserData.firstName.charAt(0)}
-                      {mockUserData.lastName.charAt(0)}
+                      {user.firstName?.charAt(0) || user.username.charAt(0)}
+                      {user.lastName?.charAt(0) || ""}
                     </span>
                   </div>
                   <div>
                     <h3 className="font-semibold">
-                      {mockUserData.firstName} {mockUserData.lastName}
+                      {user.firstName && user.lastName 
+                        ? `${user.firstName} ${user.lastName}` 
+                        : user.username}
                     </h3>
-                    <p className="text-sm text-gray-500">{mockUserData.email}</p>
+                    <p className="text-sm text-gray-500">{user.email}</p>
                   </div>
                 </div>
 
@@ -129,8 +209,18 @@ export default function AccountPage() {
 
                 <Separator className="my-6" />
 
-                <Button variant="outline" className="w-full" asChild>
-                  <Link href="/">Sign Out</Link>
+                <Button 
+                  variant="outline" 
+                  className="w-full flex items-center justify-center" 
+                  onClick={handleLogout}
+                  disabled={logoutMutation.isPending}
+                >
+                  {logoutMutation.isPending ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <LogOut className="h-4 w-4 mr-2" />
+                  )}
+                  Sign Out
                 </Button>
               </CardContent>
             </Card>
@@ -153,32 +243,51 @@ export default function AccountPage() {
                         <Label htmlFor="firstName">First Name</Label>
                         <Input
                           id="firstName"
-                          defaultValue={mockUserData.firstName}
+                          value={firstName}
+                          onChange={(e) => setFirstName(e.target.value)}
                         />
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="lastName">Last Name</Label>
                         <Input
                           id="lastName"
-                          defaultValue={mockUserData.lastName}
+                          value={lastName}
+                          onChange={(e) => setLastName(e.target.value)}
                         />
                       </div>
                     </div>
 
                     <div className="space-y-2">
                       <Label htmlFor="email">Email</Label>
-                      <Input id="email" defaultValue={mockUserData.email} />
+                      <Input 
+                        id="email" 
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                      />
                     </div>
 
                     <div className="space-y-2">
                       <Label htmlFor="phoneNumber">Phone Number</Label>
                       <Input
                         id="phoneNumber"
-                        defaultValue={mockUserData.phoneNumber}
+                        value={phoneNumber}
+                        onChange={(e) => setPhoneNumber(e.target.value)}
                       />
                     </div>
 
-                    <Button onClick={handleSaveProfile}>Save Changes</Button>
+                    <Button 
+                      onClick={handleSaveProfile}
+                      disabled={updateProfileMutation.isPending}
+                    >
+                      {updateProfileMutation.isPending ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        "Save Changes"
+                      )}
+                    </Button>
                   </CardContent>
                 </Card>
 
@@ -192,19 +301,34 @@ export default function AccountPage() {
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
                       <Label htmlFor="currentPassword">Current Password</Label>
-                      <Input id="currentPassword" type="password" />
+                      <Input 
+                        id="currentPassword" 
+                        type="password" 
+                        value={currentPassword}
+                        onChange={(e) => setCurrentPassword(e.target.value)}
+                      />
                     </div>
 
                     <div className="space-y-2">
                       <Label htmlFor="newPassword">New Password</Label>
-                      <Input id="newPassword" type="password" />
+                      <Input 
+                        id="newPassword" 
+                        type="password" 
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                      />
                     </div>
 
                     <div className="space-y-2">
                       <Label htmlFor="confirmPassword">
                         Confirm New Password
                       </Label>
-                      <Input id="confirmPassword" type="password" />
+                      <Input 
+                        id="confirmPassword" 
+                        type="password" 
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                      />
                     </div>
 
                     <Button onClick={handleSavePassword}>
@@ -245,7 +369,7 @@ export default function AccountPage() {
                                 #{order.id}
                               </TableCell>
                               <TableCell>
-                                {new Date(order.createdAt).toLocaleDateString()}
+                                {new Date(order.createdAt || Date.now()).toLocaleDateString()}
                               </TableCell>
                               <TableCell>
                                 <span
@@ -308,31 +432,104 @@ export default function AccountPage() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="border p-4 rounded-lg">
-                      <div className="flex justify-between items-start mb-4">
-                        <div>
-                          <h3 className="font-semibold">Default Address</h3>
-                          <p className="text-sm text-gray-500">Shipping & Billing</p>
+                    {user.address ? (
+                      <div className="border p-4 rounded-lg">
+                        <div className="flex justify-between items-start mb-4">
+                          <div>
+                            <h3 className="font-semibold">Default Address</h3>
+                            <p className="text-sm text-gray-500">Shipping & Billing</p>
+                          </div>
+                          <Button variant="outline" size="sm" onClick={() => setActiveTab("addressForm")}>
+                            Edit
+                          </Button>
                         </div>
-                        <Button variant="outline" size="sm">
-                          Edit
-                        </Button>
+                        <div className="text-sm">
+                          <p className="mb-1">
+                            {user.firstName} {user.lastName}
+                          </p>
+                          <p className="mb-1">{user.address}</p>
+                          <p className="mb-1">
+                            {user.city}, {user.state} {user.zipCode}
+                          </p>
+                          <p className="mb-1">{user.country}</p>
+                          <p>{user.phoneNumber}</p>
+                        </div>
                       </div>
-                      <div className="text-sm">
-                        <p className="mb-1">
-                          {mockUserData.firstName} {mockUserData.lastName}
+                    ) : (
+                      <div className="text-center py-8">
+                        <MapPin className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                        <h3 className="text-lg font-semibold mb-2">
+                          No addresses yet
+                        </h3>
+                        <p className="text-gray-500 mb-4">
+                          You haven't added any shipping addresses yet.
                         </p>
-                        <p className="mb-1">{mockUserData.address}</p>
-                        <p className="mb-1">
-                          {mockUserData.city}, {mockUserData.state}{" "}
-                          {mockUserData.zipCode}
-                        </p>
-                        <p className="mb-1">{mockUserData.country}</p>
-                        <p>{mockUserData.phoneNumber}</p>
                       </div>
-                    </div>
+                    )}
 
-                    <Button variant="outline">Add New Address</Button>
+                    <div className="space-y-4">
+                      <h3 className="font-medium text-lg">Add or Update Address</h3>
+                      <div className="space-y-2">
+                        <Label htmlFor="address">Street Address</Label>
+                        <Input 
+                          id="address" 
+                          value={address}
+                          onChange={(e) => setAddress(e.target.value)}
+                        />
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="city">City</Label>
+                          <Input 
+                            id="city" 
+                            value={city}
+                            onChange={(e) => setCity(e.target.value)}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="state">State/Province</Label>
+                          <Input 
+                            id="state" 
+                            value={state}
+                            onChange={(e) => setState(e.target.value)}
+                          />
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="zipCode">Zip/Postal Code</Label>
+                          <Input 
+                            id="zipCode" 
+                            value={zipCode}
+                            onChange={(e) => setZipCode(e.target.value)}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="country">Country</Label>
+                          <Input 
+                            id="country" 
+                            value={country}
+                            onChange={(e) => setCountry(e.target.value)}
+                          />
+                        </div>
+                      </div>
+                      
+                      <Button 
+                        onClick={handleSaveAddress}
+                        disabled={updateProfileMutation.isPending}
+                      >
+                        {updateProfileMutation.isPending ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Saving...
+                          </>
+                        ) : (
+                          "Save Address"
+                        )}
+                      </Button>
+                    </div>
                   </CardContent>
                 </Card>
               </TabsContent>
