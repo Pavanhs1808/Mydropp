@@ -151,7 +151,7 @@ function LoginForm() {
 
 function RegisterForm() {
   const { registerMutation } = useAuth();
-  const [isSupplier, setIsSupplier] = useState(false);
+  const [isSupplier, setIsSupplier] = useState(false); // Used for UI toggle, mapped to supplierStatus in DB
   const form = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
@@ -161,7 +161,7 @@ function RegisterForm() {
       confirmPassword: "",
       firstName: "",
       lastName: "",
-      isSupplier: false,
+      supplierStatus: null,
       companyName: "",
       companyDescription: "",
       businessLicense: "",
@@ -173,13 +173,13 @@ function RegisterForm() {
     const { confirmPassword, ...userData } = values;
     registerMutation.mutate({
       ...userData,
-      isSupplier
+      supplierStatus: isSupplier ? "active" : null
     });
   }
   
   function toggleSupplierForm() {
     setIsSupplier(!isSupplier);
-    form.setValue("isSupplier", !isSupplier);
+    form.setValue("supplierStatus", !isSupplier ? "active" : null);
   }
 
   return (

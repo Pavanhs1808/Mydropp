@@ -155,7 +155,7 @@ export default function MobileMenu({ isOpen, onClose }: MobileMenuProps) {
                 <Heart className="h-5 w-5 mr-3" />
                 Wishlist
               </Link>
-              {user?.isSupplier && (
+              {user?.supplierStatus && (
                 <Link href="/supplier/product" className="flex items-center py-3 px-2 text-gray-700 hover:bg-gray-100 rounded-md">
                   <Package className="h-5 w-5 mr-3" />
                   Supplier Portal

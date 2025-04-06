@@ -17,11 +17,10 @@ export const users = pgTable("users", {
   zipCode: text("zip_code"),
   country: text("country"),
   phoneNumber: text("phone_number"),
-  isSupplier: boolean("is_supplier").default(false),
   companyName: text("company_name"),
   companyDescription: text("company_description"),
   businessLicense: text("business_license"),
-  supplierStatus: text("supplier_status").default("pending"),
+  supplierStatus: text("supplier_status"),
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
@@ -36,7 +35,7 @@ export const insertUserSchema = createInsertSchema(users).pick({
   zipCode: true,
   country: true,
   phoneNumber: true,
-  isSupplier: true,
+  supplierStatus: true,
   companyName: true,
   companyDescription: true,
   businessLicense: true,

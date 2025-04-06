@@ -189,7 +189,7 @@ export default function Header({ onMobileMenuOpen, onCartOpen }: HeaderProps) {
             >
               Sale
             </Link>
-            {user?.isSupplier && (
+            {user?.supplierStatus && (
               <Link 
                 href="/supplier/product" 
                 className={`flex items-center px-3 py-2 text-sm font-medium ${

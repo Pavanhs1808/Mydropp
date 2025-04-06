@@ -129,7 +129,7 @@ function SupplierProductFormContent() {
   };
 
   // Show message if user is not a supplier
-  if (user && !user.isSupplier) {
+  if (user && !user.supplierStatus) {
     return (
       <div className="flex items-center justify-center min-h-screen p-6">
         <Card className="w-full max-w-md">
