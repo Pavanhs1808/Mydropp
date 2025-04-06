@@ -41,9 +41,9 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="flex h-screen">
+    <div className="flex min-h-screen">
       {/* Left column - Form */}
-      <div className="w-full md:w-1/2 flex items-center justify-center p-6">
+      <div className="w-full md:w-1/2 flex items-start justify-center p-6 py-10">
         <Tabs defaultValue="login" className="w-full max-w-md">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="login">Login</TabsTrigger>
@@ -59,7 +59,7 @@ export default function AuthPage() {
       </div>
       
       {/* Right column - Hero section */}
-      <div className="hidden md:block md:w-1/2 bg-gradient-to-tr from-primary-900 to-primary-700 text-white p-12 flex flex-col justify-center">
+      <div className="hidden md:flex md:w-1/2 bg-gradient-to-tr from-primary-900 to-primary-700 text-white p-12 flex-col justify-center">
         <h1 className="text-4xl font-bold mb-4">Welcome to our E-Commerce Store!</h1>
         <p className="text-lg mb-6">
           Shop the latest trends, find great deals, and enjoy a seamless shopping experience.
@@ -183,7 +183,7 @@ function RegisterForm() {
   }
 
   return (
-    <Card>
+    <Card className="mb-8">
       <CardHeader>
         <CardTitle>Create Account</CardTitle>
         <CardDescription>Sign up for a new account</CardDescription>
