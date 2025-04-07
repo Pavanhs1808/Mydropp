@@ -3,7 +3,8 @@ import {
   categories, Category, InsertCategory,
   products, Product, InsertProduct,
   orders, Order, InsertOrder,
-  orderItems, OrderItem, InsertOrderItem
+  orderItems, OrderItem, InsertOrderItem,
+  reviews, Review, InsertReview
 } from "@shared/schema";
 
 // Interface for all storage operations
@@ -39,6 +40,14 @@ export interface IStorage {
   // Order item operations
   getOrderItems(orderId: number): Promise<OrderItem[]>;
   createOrderItem(orderItem: InsertOrderItem): Promise<OrderItem>;
+  
+  // Review operations
+  getReviews(productId?: number): Promise<Review[]>;
+  getReviewsByUser(userId: number): Promise<Review[]>;
+  getReview(id: number): Promise<Review | undefined>;
+  createReview(review: InsertReview): Promise<Review>;
+  updateReviewHelpfulness(id: number, increment: boolean): Promise<Review | undefined>;
+  updateProductRating(productId: number): Promise<Product | undefined>;
 }
 
 // In-memory storage implementation
@@ -48,12 +57,14 @@ export class MemStorage implements IStorage {
   private products: Map<number, Product>;
   private orders: Map<number, Order>;
   private orderItems: Map<number, OrderItem>;
+  private reviews: Map<number, Review>;
   
   private userCurrentId: number;
   private categoryCurrentId: number;
   private productCurrentId: number;
   private orderCurrentId: number;
   private orderItemCurrentId: number;
+  private reviewCurrentId: number;
   
   constructor() {
     this.users = new Map();
@@ -61,12 +72,14 @@ export class MemStorage implements IStorage {
     this.products = new Map();
     this.orders = new Map();
     this.orderItems = new Map();
+    this.reviews = new Map();
     
     this.userCurrentId = 1;
     this.categoryCurrentId = 1;
     this.productCurrentId = 1;
     this.orderCurrentId = 1;
     this.orderItemCurrentId = 1;
+    this.reviewCurrentId = 1;
     
     // Initialize with sample data
     this.initializeData();
@@ -355,6 +368,91 @@ export class MemStorage implements IStorage {
     this.orderItems.set(id, orderItem);
     return orderItem;
   }
+  
+  // Review operations
+  async getReviews(productId?: number): Promise<Review[]> {
+    const reviews = Array.from(this.reviews.values());
+    if (productId) {
+      return reviews.filter((review) => review.productId === productId);
+    }
+    return reviews;
+  }
+  
+  async getReviewsByUser(userId: number): Promise<Review[]> {
+    return Array.from(this.reviews.values()).filter(
+      (review) => review.userId === userId,
+    );
+  }
+  
+  async getReview(id: number): Promise<Review | undefined> {
+    return this.reviews.get(id);
+  }
+  
+  async createReview(insertReview: InsertReview): Promise<Review> {
+    const id = this.reviewCurrentId++;
+    const now = new Date();
+    const review: Review = {
+      ...insertReview,
+      id,
+      createdAt: now,
+      updatedAt: now,
+      helpfulCount: 0
+    };
+    this.reviews.set(id, review);
+    
+    // Update product rating after adding a review
+    await this.updateProductRating(review.productId);
+    
+    return review;
+  }
+  
+  async updateReviewHelpfulness(id: number, increment: boolean): Promise<Review | undefined> {
+    const review = this.reviews.get(id);
+    if (!review) {
+      return undefined;
+    }
+    
+    const updatedReview: Review = {
+      ...review,
+      helpfulCount: increment 
+        ? (review.helpfulCount || 0) + 1 
+        : Math.max(0, (review.helpfulCount || 0) - 1),
+      updatedAt: new Date(),
+    };
+    
+    this.reviews.set(id, updatedReview);
+    return updatedReview;
+  }
+  
+  async updateProductRating(productId: number): Promise<Product | undefined> {
+    const product = this.products.get(productId);
+    if (!product) {
+      return undefined;
+    }
+    
+    const productReviews = await this.getReviews(productId);
+    if (productReviews.length === 0) {
+      const updatedProduct: Product = {
+        ...product,
+        rating: 0,
+        reviewCount: 0,
+      };
+      this.products.set(productId, updatedProduct);
+      return updatedProduct;
+    }
+    
+    const totalRating = productReviews.reduce((sum, review) => sum + review.rating, 0);
+    const averageRating = totalRating / productReviews.length;
+    
+    const updatedProduct: Product = {
+      ...product,
+      rating: averageRating,
+      reviewCount: productReviews.length,
+    };
+    
+    this.products.set(productId, updatedProduct);
+    return updatedProduct;
+  }
 }
 
 import { db } from "./db";
@@ -509,6 +607,99 @@ export class DatabaseStorage implements IStorage {
   
   async createOrderItem(insertOrderItem: InsertOrderItem): Promise<OrderItem> {
     const result = await db.insert(orderItems).values(insertOrderItem).returning();
+    return result[0];
+  }
+  
+  // Review operations
+  async getReviews(productId?: number): Promise<Review[]> {
+    if (productId) {
+      return db.select().from(reviews).where(eq(reviews.productId, productId));
+    }
+    return db.select().from(reviews);
+  }
+  
+  async getReviewsByUser(userId: number): Promise<Review[]> {
+    return db.select().from(reviews).where(eq(reviews.userId, userId));
+  }
+  
+  async getReview(id: number): Promise<Review | undefined> {
+    const result = await db.select().from(reviews).where(eq(reviews.id, id));
+    return result[0];
+  }
+  
+  async createReview(insertReview: InsertReview): Promise<Review> {
+    const result = await db.insert(reviews).values(insertReview).returning();
+    const review = result[0];
+    
+    // Update product rating after adding a review
+    await this.updateProductRating(review.productId);
+    
+    return review;
+  }
+  
+  async updateReviewHelpfulness(id: number, increment: boolean): Promise<Review | undefined> {
+    // First get the current review
+    const currentReview = await this.getReview(id);
+    if (!currentReview) {
+      return undefined;
+    }
+    
+    // Calculate new helpfulness count
+    const helpfulCount = increment 
+      ? (currentReview.helpfulCount || 0) + 1 
+      : Math.max(0, (currentReview.helpfulCount || 0) - 1);
+    
+    // Update the review
+    const result = await db
+      .update(reviews)
+      .set({ 
+        helpfulCount, 
+        updatedAt: new Date() 
+      })
+      .where(eq(reviews.id, id))
+      .returning();
+    
+    return result[0];
+  }
+  
+  async updateProductRating(productId: number): Promise<Product | undefined> {
+    // Get the product
+    const product = await this.getProduct(productId);
+    if (!product) {
+      return undefined;
+    }
+    
+    // Get all reviews for this product
+    const productReviews = await this.getReviews(productId);
+    
+    // If no reviews, set rating to 0
+    if (productReviews.length === 0) {
+      const result = await db
+        .update(products)
+        .set({ 
+          rating: 0, 
+          reviewCount: 0 
+        })
+        .where(eq(products.id, productId))
+        .returning();
+      
+      return result[0];
+    }
+    
+    // Calculate average rating
+    const totalRating = productReviews.reduce((sum, review) => sum + review.rating, 0);
+    const averageRating = totalRating / productReviews.length;
+    
+    // Update the product
+    const result = await db
+      .update(products)
+      .set({ 
+        rating: averageRating, 
+        reviewCount: productReviews.length 
+      })
+      .where(eq(products.id, productId))
+      .returning();
+    
     return result[0];
   }
 }

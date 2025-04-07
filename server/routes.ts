@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage"; // Using memory storage for now
-import { insertOrderSchema, insertOrderItemSchema } from "@shared/schema";
+import { insertOrderSchema, insertOrderItemSchema, insertReviewSchema } from "@shared/schema";
 import { z } from "zod";
 import { setupAuth } from "./auth"; // Using standard auth for now
 // import { connectToDatabase } from "./mongodb";
@@ -182,6 +182,88 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(updatedUser);
     } catch (error) {
       res.status(500).json({ message: "Failed to update user" });
+    }
+  });
+
+  // Get product reviews
+  app.get("/api/products/:productId/reviews", async (req, res) => {
+    try {
+      const { productId } = req.params;
+      const reviews = await storage.getReviews(Number(productId));
+      res.json(reviews);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch reviews" });
+    }
+  });
+
+  // Get user's reviews
+  app.get("/api/users/:userId/reviews", async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const reviews = await storage.getReviewsByUser(Number(userId));
+      res.json(reviews);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch user reviews" });
+    }
+  });
+
+  // Create a review for a product
+  app.post("/api/products/:productId/reviews", async (req, res) => {
+    try {
+      // Check if the user is authenticated
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "You must be logged in to leave a review" });
+      }
+      
+      const { productId } = req.params;
+      const userId = req.user!.id;
+      
+      // Verify the product exists
+      const product = await storage.getProduct(Number(productId));
+      if (!product) {
+        return res.status(404).json({ message: "Product not found" });
+      }
+      
+      // Parse and validate the review data
+      const reviewData = insertReviewSchema.parse({
+        ...req.body,
+        productId: Number(productId),
+        userId: userId,
+      });
+      
+      // Create the review
+      const review = await storage.createReview(reviewData);
+      
+      res.status(201).json(review);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ message: "Invalid review data", errors: error.errors });
+      }
+      res.status(500).json({ message: "Failed to create review" });
+    }
+  });
+
+  // Mark a review as helpful or not helpful
+  app.post("/api/reviews/:reviewId/helpful", async (req, res) => {
+    try {
+      const { reviewId } = req.params;
+      const { helpful } = req.body;
+      
+      // Validate helpful parameter
+      if (typeof helpful !== 'boolean') {
+        return res.status(400).json({ message: "The 'helpful' parameter must be a boolean" });
+      }
+      
+      // Update the review helpfulness count
+      const review = await storage.updateReviewHelpfulness(Number(reviewId), helpful);
+      
+      if (!review) {
+        return res.status(404).json({ message: "Review not found" });
+      }
+      
+      res.json(review);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update review helpfulness" });
     }
   });
 
