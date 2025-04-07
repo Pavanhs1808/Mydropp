@@ -24,41 +24,43 @@ function App() {
   const [cartOpen, setCartOpen] = useState(false);
 
   return (
-    <AuthProvider>
-      <div className="flex flex-col min-h-screen">
-        <Header 
-          onMobileMenuOpen={() => setMobileMenuOpen(true)}
-          onCartOpen={() => setCartOpen(true)}
-        />
-        
-        <MobileMenu 
-          isOpen={mobileMenuOpen}
-          onClose={() => setMobileMenuOpen(false)} 
-        />
-        
-        <CartSidebar 
-          isOpen={cartOpen}
-          onClose={() => setCartOpen(false)}
-        />
-        
-        <main className="flex-grow">
-          <Switch>
-            <Route path="/" component={HomePage} />
-            <Route path="/category/:slug" component={ProductListingPage} />
-            <Route path="/product/:slug" component={ProductDetailPage} />
-            <ProtectedRoute path="/checkout" component={CheckoutPage} />
-            <Route path="/auth" component={AuthPage} />
-            <ProtectedRoute path="/account" component={AccountPage} />
-            <ProtectedRoute path="/track-order" component={OrderTrackingPage} />
-            <ProtectedRoute path="/supplier/product" component={SupplierProductForm} />
-            <Route component={NotFound} />
-          </Switch>
-        </main>
-        
-        <Footer />
-        <Toaster />
-      </div>
-    </AuthProvider>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <div className="flex flex-col min-h-screen">
+          <Header 
+            onMobileMenuOpen={() => setMobileMenuOpen(true)}
+            onCartOpen={() => setCartOpen(true)}
+          />
+          
+          <MobileMenu 
+            isOpen={mobileMenuOpen}
+            onClose={() => setMobileMenuOpen(false)} 
+          />
+          
+          <CartSidebar 
+            isOpen={cartOpen}
+            onClose={() => setCartOpen(false)}
+          />
+          
+          <main className="flex-grow">
+            <Switch>
+              <Route path="/" component={HomePage} />
+              <Route path="/category/:slug" component={ProductListingPage} />
+              <Route path="/product/:slug" component={ProductDetailPage} />
+              <ProtectedRoute path="/checkout" component={CheckoutPage} />
+              <Route path="/auth" component={AuthPage} />
+              <ProtectedRoute path="/account" component={AccountPage} />
+              <ProtectedRoute path="/track-order" component={OrderTrackingPage} />
+              <ProtectedRoute path="/supplier/product" component={SupplierProductForm} />
+              <Route component={NotFound} />
+            </Switch>
+          </main>
+          
+          <Footer />
+          <Toaster />
+        </div>
+      </AuthProvider>
+    </QueryClientProvider>
   );
 }
 
