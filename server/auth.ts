@@ -6,6 +6,8 @@ import { scrypt, randomBytes, timingSafeEqual } from "crypto";
 import { promisify } from "util";
 import { storage } from "./storage";
 import { User as SelectUser } from "@shared/schema";
+import { createUserInBothDatabases, usernameExistsInEitherDatabase, emailExistsInEitherDatabase } from "./userSync";
+import { log } from "./vite";
 
 declare global {
   namespace Express {
@@ -72,21 +74,34 @@ export function setupAuth(app: Express) {
 
   app.post("/api/register", async (req, res, next) => {
     try {
-      const existingUser = await storage.getUserByUsername(req.body.username);
-      if (existingUser) {
+      // Check if username exists in either PostgreSQL or MongoDB
+      const usernameExists = await usernameExistsInEitherDatabase(req.body.username);
+      if (usernameExists) {
         return res.status(400).json({ message: "Username already exists" });
       }
 
-      const user = await storage.createUser({
-        ...req.body,
-        password: await hashPassword(req.body.password),
-      });
+      // Check if email exists in either PostgreSQL or MongoDB
+      if (req.body.email) {
+        const emailExists = await emailExistsInEitherDatabase(req.body.email);
+        if (emailExists) {
+          return res.status(400).json({ message: "Email already exists" });
+        }
+      }
+
+      // Hash the password for PostgreSQL
+      const hashedPassword = await hashPassword(req.body.password);
+      
+      // Create user in both PostgreSQL and MongoDB
+      const user = await createUserInBothDatabases(req.body, hashedPassword);
+      
+      log(`User ${user.username} registered successfully`, 'auth');
 
       req.login(user, (err) => {
         if (err) return next(err);
         res.status(201).json(user);
       });
     } catch (error) {
+      log(`Registration error: ${error}`, 'auth');
       next(error);
     }
   });

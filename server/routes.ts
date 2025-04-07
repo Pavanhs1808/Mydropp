@@ -1,12 +1,26 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { storage } from "./storage"; // Using memory storage for now
+import { storage } from "./storage"; // PostgreSQL storage
 import { insertOrderSchema, insertOrderItemSchema, insertReviewSchema } from "@shared/schema";
 import { z } from "zod";
-import { setupAuth } from "./auth"; // Using standard auth for now
-// import { connectToDatabase } from "./mongodb";
+import { setupAuth } from "./auth"; // Using standard auth for PostgreSQL
+import { connectToDatabase } from "./mongodb"; // Import MongoDB connection
+import { log } from "./vite";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Try to connect to MongoDB for user syncing
+  try {
+    const connection = await connectToDatabase();
+    if (connection) {
+      log('MongoDB connected successfully during application startup', 'mongodb');
+    } else {
+      log('MongoDB connection failed, but application will continue with PostgreSQL', 'mongodb');
+    }
+  } catch (error) {
+    log(`MongoDB connection error: ${error}`, 'mongodb');
+    log('Application will continue with PostgreSQL only', 'mongodb');
+  }
+
   // Set up authentication routes
   setupAuth(app);
   // Get all categories
