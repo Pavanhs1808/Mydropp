@@ -6,18 +6,34 @@ import { InsertUser as PgInsertUser } from '@shared/schema';
 import { connectToDatabase } from './mongodb';
 import { log } from './vite';
 
-// Connect to MongoDB first
+// We'll initialize this when we actually need it
 let mongoConnected = false;
-connectToDatabase().then((connection) => {
-  if (connection) {
-    mongoConnected = true;
-    log('MongoDB connection established for user sync', 'userSync');
-  } else {
-    log('MongoDB connection failed, will still try to sync users', 'userSync');
+
+// Flag to track if we've tried to connect yet
+let hasAttemptedConnection = false;
+
+// Function to attempt connection once
+async function ensureMongoConnection() {
+  if (hasAttemptedConnection) {
+    return mongoConnected;
   }
-}).catch(() => {
-  log('MongoDB connection error, will still try to sync users', 'userSync');
-});
+  
+  hasAttemptedConnection = true;
+  
+  try {
+    const connection = await connectToDatabase();
+    if (connection) {
+      mongoConnected = true;
+      log('MongoDB connection established for user sync', 'userSync');
+    } else {
+      log('MongoDB connection failed, will still operate with PostgreSQL only', 'userSync');
+    }
+  } catch (error) {
+    log(`MongoDB connection error: ${error}`, 'userSync');
+  }
+  
+  return mongoConnected;
+}
 
 /**
  * Synchronize user creation between PostgreSQL and MongoDB
@@ -33,9 +49,12 @@ export async function createUserInBothDatabases(userData: PgInsertUser, hashedPa
       password: hashedPassword
     });
 
-    // Try to create the same user in MongoDB
-    try {
-      if (mongoConnected) {
+    // Check MongoDB connection before trying to save
+    const isConnected = await ensureMongoConnection();
+
+    // Try to create the same user in MongoDB if connected
+    if (isConnected) {
+      try {
         // Need to prepare the MongoDB data - MongoDB uses strings for IDs
         const mongoUserData: MongoInsertUser = {
           ...userData,
@@ -46,10 +65,12 @@ export async function createUserInBothDatabases(userData: PgInsertUser, hashedPa
         mongoStorage.createUser(mongoUserData)
           .then(() => log(`User ${userData.username} synced to MongoDB`, 'userSync'))
           .catch(error => log(`Failed to sync user ${userData.username} to MongoDB: ${error}`, 'userSync'));
+      } catch (mongoError) {
+        // Log error but don't fail the registration
+        log(`Error syncing user to MongoDB: ${mongoError}`, 'userSync');
       }
-    } catch (mongoError) {
-      // Log error but don't fail the registration
-      log(`Error syncing user to MongoDB: ${mongoError}`, 'userSync');
+    } else {
+      log(`MongoDB not connected, user ${userData.username} saved to PostgreSQL only`, 'userSync');
     }
 
     return pgUser;

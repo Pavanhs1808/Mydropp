@@ -9,8 +9,8 @@ import {
   type InsertOrder, type InsertOrderItem
 } from '@shared/mongoSchema';
 
-// MongoDB connection string - will use environment variable or default to local MongoDB
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/dropmart';
+// MongoDB connection string - will use environment variable or a placeholder
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://mongo-not-configured:example@cluster.mongodb.net/dropmart';
 
 export interface IStorage {
   // Session store
