@@ -10,7 +10,7 @@ import {
 } from '@shared/mongoSchema';
 
 // MongoDB connection string - will use environment variable or a placeholder
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://mongo-not-configured:example@cluster.mongodb.net/dropmart';
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/fallback';
 
 export interface IStorage {
   // Session store

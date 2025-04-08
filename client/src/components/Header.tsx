@@ -55,7 +55,7 @@ export default function Header({ onMobileMenuOpen, onCartOpen }: HeaderProps) {
         <div className={`flex justify-between items-center px-4 transition-all ${isScrolled ? 'py-2' : 'py-4'}`}>
           {/* Logo */}
           <Link href="/" className="flex items-center">
-            <span className={`font-bold text-primary transition-all ${isScrolled ? 'text-xl' : 'text-2xl'}`}>ShopEase</span>
+            <span className={`font-bold text-primary transition-all ${isScrolled ? 'text-xl' : 'text-2xl'}`}>Zaylio</span>
           </Link>
 
           {/* Search */}

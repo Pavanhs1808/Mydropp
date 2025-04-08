@@ -10,7 +10,7 @@ export default function Footer() {
           {/* Logo and About */}
           <div className="col-span-1 md:col-span-1">
             <div className="flex items-center mb-4">
-              <span className="text-2xl font-bold text-white">ShopEase</span>
+              <span className="text-2xl font-bold text-white">Zaylio</span>
             </div>
             <p className="text-gray-400 mb-4">
               Your one-stop destination for quality electronics, fashion, and more. Shop with confidence.

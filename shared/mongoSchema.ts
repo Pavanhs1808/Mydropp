@@ -20,7 +20,7 @@ const userSchema = new Schema({
   companyName: { type: String, default: null },
   companyDescription: { type: String, default: null },
   businessLicense: { type: String, default: null }
-}, { timestamps: true });
+}, { timestamps: true, suppressReservedKeysWarning: true });
 
 // Category Schema
 const categorySchema = new Schema({
@@ -47,7 +47,7 @@ const productSchema = new Schema({
   isSale: { type: Boolean, default: false },
   rating: { type: Number, default: null },
   reviewCount: { type: Number, default: null }
-});
+}, { suppressReservedKeysWarning: true }); // Add this option here
 
 // Order Schema
 const orderSchema = new Schema({
