@@ -48,7 +48,7 @@ This application uses MongoDB as its database. Here's how to set it up:
    ```
    MONGODB_URI=mongodb+srv://<username>:<password>@<cluster-url>/dropmart?retryWrites=true&w=majority
    ```
-   (Replace placeholders with your actual MongoDB Atlas credentials)
+   (Replace placeholders with your actual MongoDB Atlas credentials or connect it to a local MongoDB server)
 
 6. Run the MongoDB seed script to populate the database:
    ```
