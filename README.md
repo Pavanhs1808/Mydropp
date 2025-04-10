@@ -15,7 +15,7 @@ A modern dropshipping e-commerce platform with comprehensive product browsing an
 
 - **Frontend**: React, TypeScript, Tailwind CSS, Shadcn UI
 - **Backend**: Express, Node.js
-- **Database**: MongoDB
+- **Database**: MongoDB,PostgreSQL
 - **Authentication**: Passport.js, express-session
 
 ## MongoDB Setup
@@ -36,7 +36,11 @@ This application uses MongoDB as its database. Here's how to set it up:
 3. Run the MongoDB seed script to populate the database:
    ```
    npx tsx scripts/seed-mongodb.ts
-   ```
+   ``` 
+###USing PostgreSQL
+
+Use PostgreSQL to update the profile with registered details
+https://www.postgresql.org/download/
 
 ### Using MongoDB Atlas (Cloud)
 
