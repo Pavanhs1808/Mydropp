@@ -30,7 +30,7 @@ This application uses MongoDB as its database. Here's how to set it up:
 
 2. Create a `.env` file in the project root with:
    ```
-   MONGODB_URI=mongodb://localhost:27017/dropmart
+   MONGODB_URI=mongodb://localhost:27017/your project
    ```
 
 3. Run the MongoDB seed script to populate the database:
