@@ -13,7 +13,7 @@ Features
 
  Technology Stack
 
-- **Frontend**: React, TypeScript, Tailwind CSS, Shadcn UI
+- **Frontend**: React, TypeScript, Tailwind CSS, 
 - **Backend**: Express, Node.js
 - **Database**: MongoDB,PostgreSQL
 - **Authentication**: Passport.js, express-session
@@ -26,7 +26,7 @@ This application uses MongoDB as its database. Here's how to set it up:
 
 1. Install MongoDB on your computer
    - [Download MongoDB Community Server](https://www.mongodb.com/try/download/community)
-   - Follow installation instructions for your operating system
+   - Follow the installation instructions for your operating system
 
 2. Create a `.env` file in the project root with:
    ```
@@ -37,29 +37,28 @@ This application uses MongoDB as its database. Here's how to set it up:
    ```
    npx tsx scripts/seed-mongodb.ts
    ``` 
-###USing PostgreSQL
+USing PostgreSQL
 
 Use PostgreSQL to update the profile with registered details
 https://www.postgresql.org/download/
 
- Using MongoDB Atlas (Cloud)
+Using MongoDB  (Cloud)
 
-1. Create a free [MongoDB Atlas account](https://www.mongodb.com/cloud/atlas/register)
-2. Create a new cluster
-3. Set up a database user and password
-4. Get your connection string from MongoDB Atlas
-5. Create a `.env` file in the project root with:
+1. Create a new database
+2. Set up a database user and password
+3. Get your connection string from MongoDB Atlas
+4. Create a `.env` file in the project root with:
    ```
    MONGODB_URI=mongodb+srv://<username>:<password>@<cluster-url>/dropmart?retryWrites=true&w=majority
    ```
    (Replace placeholders with your actual MongoDB Atlas credentials or connect it to a local MongoDB server)
 
-6. Run the MongoDB seed script to populate the database:
+5. Run the MongoDB seed script to populate the database:
    ```
    npx tsx scripts/seed-mongodb.ts
    ```
 
-## Running the Application
+Running the Application
 
 1. Install dependencies:
    ```
