@@ -1,8 +1,8 @@
-# E-Commerce Dropshipping Platform
+ E-Commerce Dropshipping Platform
 
 A modern dropshipping e-commerce platform with comprehensive product browsing and dynamic inventory management.
 
-## Features
+Features
 
 - User authentication (login, registration)
 - Product browsing by category
@@ -11,18 +11,18 @@ A modern dropshipping e-commerce platform with comprehensive product browsing an
 - Order processing
 - Supplier portal for adding products
 
-## Technology Stack
+ Technology Stack
 
 - **Frontend**: React, TypeScript, Tailwind CSS, Shadcn UI
 - **Backend**: Express, Node.js
 - **Database**: MongoDB,PostgreSQL
 - **Authentication**: Passport.js, express-session
 
-## MongoDB Setup
+ MongoDB Setup
 
 This application uses MongoDB as its database. Here's how to set it up:
 
-### Local Development
+ Local Development
 
 1. Install MongoDB on your computer
    - [Download MongoDB Community Server](https://www.mongodb.com/try/download/community)
@@ -42,7 +42,7 @@ This application uses MongoDB as its database. Here's how to set it up:
 Use PostgreSQL to update the profile with registered details
 https://www.postgresql.org/download/
 
-### Using MongoDB Atlas (Cloud)
+ Using MongoDB Atlas (Cloud)
 
 1. Create a free [MongoDB Atlas account](https://www.mongodb.com/cloud/atlas/register)
 2. Create a new cluster
@@ -76,13 +76,13 @@ https://www.postgresql.org/download/
    http://localhost:5000
    ```
 
-## Default Users
+ Default Users
 
 The seed script creates an admin user with:
 - Username: `admin`
 - Password: `admin123`
 
-## Project Structure
+ Project Structure
 
 - `/client`: React frontend application
 - `/server`: Express backend API
